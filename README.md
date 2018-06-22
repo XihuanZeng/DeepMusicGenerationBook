@@ -14,7 +14,3 @@ Categorized by Network Architecture Approach
 * RNN-based 
 * CNN-based
 
-
-
-
-

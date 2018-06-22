@@ -1,7 +1,3 @@
----
-description: CNN-based generative model for audio generation
----
-
 # WaveNet
 
 ## Background
@@ -14,7 +10,5 @@ Such an network architecture can be also applied to music generation, which is m
 
 ## Concepts
 
-
-
-
+### Dilated Convolution
 
