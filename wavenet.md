@@ -38,7 +38,23 @@ Typically raw audio is stored in 16-bit integers for each time step which means 
 
 ### Gated Activation Units
 
-Instead of using an activation function like 
+Normally people will add RELU as activation function to the output of a convolution layer.
 
+$$z=RELU(W_{f,k}*x)$$ , where $$f$$ is denotes the filter, $$k$$ is layer index and $$ * $$ is convolution operator. 
 
+In WaveNet, inspired by [PixelCNN](https://arxiv.org/pdf/1606.05328.pdf), the authors suggest using a Gated Activation instead of RELU as this yields significantly better result for modeling audio. This is denote by:
+
+$$
+z=tanh(W_{f,k})*x\odot\sigma(W_{g,k}*x)
+$$
+
+Here $$g$$ denotes gate and $$\odot$$ is the element-wise multiplication operator.
+
+### Residual Learning and Skip Connections
+
+The idea of using Residual Learning comes from [ResNet.](https://arxiv.org/abs/1512.03385) Residual learning is tackling the degradation problem which states that with the network depth increasing, accuracy gets saturated and then degrades rapidly. Surprisingly this is not due to overfitting as the training error also decreases. To illustrate this, consider we have a shallow network and deep network, the training error of deep network should never fall below its shallow counterparts as we can always just make the added layer identity to yield same result as the shallow one. That is to say the standard back-propagation has hard time to learn the identity mapping. 
+
+So in ResNet the model is like this: suppose the desired mapping that we want is $$H(x) $$. Instead of optimizing against $$H(x)$$ we let our stacked non-linear layers to optimize over $$F(x):=H(x)-x$$. In the ResNet paper it hypothesized that it is easier to learn this residual mapping in comparison to identity mapping. 
+
+In WaveNet, the 
 
