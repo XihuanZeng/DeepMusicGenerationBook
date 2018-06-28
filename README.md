@@ -16,8 +16,7 @@ Categorized by Network Architecture Approach
 * CNN
   * WaveNet
 * Generative Models
-  * GAN
-  * Variational Autoencoder
+  * 
 * Probability Models
   * DeepBach
 
