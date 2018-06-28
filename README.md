@@ -11,7 +11,13 @@ Categorized by Input Format
 
 Categorized by Network Architecture Approach
 
-* RNN-based 
-* CNN-based
-* GAN-based
+* RNN
+  * Magenta
+* CNN
+  * WaveNet
+* Generative Models
+  * GAN
+  * Variational Autoencoder
+* Probability Models
+  * DeepBach
 
