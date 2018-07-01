@@ -297,5 +297,71 @@ def causal_conv(value, filter_, dilation, name='causal_conv'):
 
 We can see causal\_conv is composed from 3 parts, namely the time\_to\_batch, tf.nn.conv1d and batch\_to\_tome. Let me explain them one by one.
 
-* time\_to\_batch: 
+#### time\_to\_batch
+
+```python
+"""
+Let me illustrate with an example. since value has shape = [batch, in_width, in_channels], 
+assume batch = 1 and in_channel = 1. 
+
+value =
+np.array([[[1],
+    [2],
+    [3],
+    [4],
+    [5],
+    [6],
+    [7],
+    [8]]]), the shape is (1,8,1)
+if dilation = 2, then result is
+[[[1.]
+  [3.]
+  [5.]
+  [7.]]
+
+ [[2.]
+  [4.]
+  [6.]
+  [8.]]], the shape is (2,4,1)
+
+if dilation = 4, then result is
+[[[1.]
+  [5.]]
+
+ [[2.]
+  [6.]]
+
+ [[3.]
+  [7.]]
+
+ [[4.]
+  [8.]]], the shape is (4,2,1)
+
+i.e when filter apply to [1,5], it will skip [2,3,4]
+"""
+```
+
+#### batch\_to\_time
+
+Inverse of time\_to\_batch
+
+#### causal\_conv
+
+The function first calls time\_to\_batch to create input for convolution, then call tf.nn.conv1d to do convolution operation and finally call batch\_to\_time to bring the 1st dimension back to batch\_size.
+
+About conv1d:
+
+```python
+"""
+# This indeed call conv2d with reshaped value and filter,
+# where value is reshaped to [batch, 1, in_width, in_channels],
+# filter is reshaped to [1, filter_width, in_channels, out_channels
+conv = tf.nn.conv1d(transformed, filter_, stride=1,
+                    padding='VALID')
+"""
+```
+
+
+
+
 
