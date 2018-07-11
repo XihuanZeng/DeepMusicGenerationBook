@@ -61,6 +61,104 @@ The paper illustrate some cases of how to use tensor broadcasting to add tensors
 * For instance, if we have an additional information of shape n that we want to add to an intermediate layer of shape a-by-b. What we can do to the shape-n vector is we duplicate each value ab times to create a tensor of shape a-by-b-by-n, then concatenate this tensor to the intermediate layer, this is called 1-D conditions.
 * If we use previous bar\(or bars\) as the condition, since our audio input has the shape of h-by-w\(see previous section for the Symbolic Representation for Convolution\). This is the case of 2-D conditions and we need a way to map a h-by-w matrix to a-by-b intermediate layer. So we use a trainable Conditioner CNN to do the trick. The conditioner and generator CNNs use exactly the same filter shapes in their convolution layers, so that the outputs of their convolution layers have “compatible” shapes.
 
+## Code Review
+
+The official code provided by the authors can be found [here in Github](https://github.com/RichardYang40148/MidiNet/tree/master/v1). The implementation is written in TensorFlow. The code used the structure of the [DCGAN code base](https://github.com/carpedm20/DCGAN-tensorflow) with modified Discriminator and Generator which takes conditioning into consideration
+
+### Discriminator
+
+```python
+# how the discrinimator get called in GAN
+self.D, self.D_logits, self.fm = self.discriminator(self.images, self.y, reuse=False)
+```
+
+```python
+# This part is how discriminator get defined. 
+# y here is the additional information(prior knowledge) that we want to add.
+# y_dim is the dimension of y.
+def discriminator(self, x, y=None, reuse=False):
+    df_dim = 64
+    dfc_dim = 1024
+    if reuse:
+        tf.get_variable_scope().reuse_variables()
+
+    yb = tf.reshape(y, [self.batch_size, 1, 1, self.y_dim])
+    # this is doing the 1-D conditoning
+    # we concat yb with input x
+    x = conv_cond_concat(x, yb)
+    h0 = lrelu(conv2d(x, self.c_dim + self.y_dim,k_h=2, k_w=128, name='d_h0_conv'))
+    fm = h0
+    # conditioning is also implemented on 1st layer
+ 
+       h0 = conv_cond_concat(h0, yb)
+
+    h1 = lrelu(self.d_bn1(conv2d(h0, self.df_dim + self.y_dim,k_h=4, k_w=1, name='d_h1_conv')))
+    h1 = tf.reshape(h1, [self.batch_size, -1])            
+    h1 = tf.concat(1, [h1, y])
+    
+    h2 = lrelu(self.d_bn2(linear(h1, self.dfc_dim, 'd_h2_lin')))
+    h2 = tf.concat(1, [h2, y])
+
+    h3 = linear(h2, 1, 'd_h3_lin')
+    
+    return tf.nn.sigmoid(h3), h3, fm
+```
+
+### Generator
+
+```python
+# how Generator get called in GAN
+self.G = self.generator(self.z, self.y, self.prev_bar)
+```
+
+```python
+# z is the random vector to generate 
+# y is the additional information
+# prev_x is the same shape with input in the discriminator
+def generator(self, z, y=None, prev_x = None):
+    # Let's assume we have a mirrored encoder-decoder CNN model
+    # The encoder takes prev_x, and create all intermediate layers 
+    # Later on, decoder will start with random vector z,
+    # For all the intermediate layers from decoder, we have a mirrored layer in the encoder, say h1_prev
+    # This makes it possible to concat them. If we concat them on 3rd dimension, it looks like we just add some additional feature maps
+    h0_prev = lrelu(self.g_prev_bn0(conv2d(prev_x, 16, k_h=1, k_w=128,d_h=1, d_w=2, name='g_h0_prev_conv')))
+    h1_prev = lrelu(self.g_prev_bn1(conv2d(h0_prev, 16, k_h=2, k_w=1, name='g_h1_prev_conv')))
+    h2_prev = lrelu(self.g_prev_bn2(conv2d(h1_prev, 16, k_h=2, k_w=1, name='g_h2_prev_conv')))
+    h3_prev = lrelu(self.g_prev_bn3(conv2d(h2_prev, 16, k_h=2, k_w=1, name='g_h3_prev_conv')))
+
+    # prior knowledege is added to random vector z
+    yb = tf.reshape(y, [self.batch_size, 1, 1, self.y_dim])
+    z = tf.concat(1, [z, y])
+
+    h0 = tf.nn.relu(self.g_bn0(linear(z, 1024, 'g_h0_lin')))
+    h0 = tf.concat(1, [h0, y])
+
+    h1 = tf.nn.relu(self.g_bn1(linear(h0, self.gf_dim*2*2*1, 'g_h1_lin')))
+    h1 = tf.reshape(h1, [self.batch_size, 2, 1, self.gf_dim * 2])
+    # here we conditioning on both prior knowledge and prev bar
+    h1 = conv_cond_concat(h1, yb)
+    h1 = conv_prev_concat(h1, h3_prev)
+    # conditoning and prev bar information is add to every layer
+    h2 = tf.nn.relu(self.g_bn2(deconv2d(h1, [self.batch_size, 4, 1, self.gf_dim * 2],k_h=2, k_w=1,d_h=2, d_w=2 ,name='g_h2')))
+    h2 = conv_cond_concat(h2, yb)
+    h2 = conv_prev_concat(h2, h2_prev)
+
+    h3 = tf.nn.relu(self.g_bn3(deconv2d(h2, [self.batch_size, 8, 1, self.gf_dim * 2],k_h=2, k_w=1,d_h=2, d_w=2 ,name='g_h3')))
+    h3 = conv_cond_concat(h3, yb)
+    h3 = conv_prev_concat(h3, h1_prev)
+
+    h4 = tf.nn.relu(self.g_bn4(deconv2d(h3, [self.batch_size, 16, 1, self.gf_dim * 2],k_h=2, k_w=1,d_h=2, d_w=2 ,name='g_h4')))
+    h4 = conv_cond_concat(h4, yb)
+    h4 = conv_prev_concat(h4, h0_prev)
+
+    return tf.nn.sigmoid(deconv2d(h4, [self.batch_size, 16, 128, self.c_dim],k_h=1, k_w=128,d_h=1, d_w=2, name='g_h5'))
+
+```
+
+The trick here is to incorporate information on the previous bar to every layer of the Generator network. We first do a feedforward start from prev\_x to create tensors h0\_prev through h3\_prev. Then we start from a random vector z. First of all we incorporate some prior knowledge y or equivalently y\_b. We do a deconv on the concat\(z, y\), this will create an intermediate layer of CNN which has the same shape\(at least for the first two dimensions\) with h0\_prev, which is also one intermediate layer of the opposite version of the CNN. This makes it possible to concatenate these two tensors on the channel dimension. We repeat this steps several times for all layers. This has the effect of what I described in the Conditioner section above. 
+
+
+
 ## References
 
 * Yang, Li-Chia, Szu-Yu Chou, and Yi-Hsuan Yang. "MidiNet: A convolutional generative adversarial network for symbolic-domain music generation." arXiv preprint arXiv:1703.10847\(2017\).
