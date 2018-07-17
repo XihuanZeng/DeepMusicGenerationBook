@@ -4,4 +4,5 @@
 * [WaveNet](wavenet.md)
 * [Music Data Preparation](music-data-preparation.md)
 * [MidiNet](midinet.md)
+* [MuseGAN](musegan.md)
 
