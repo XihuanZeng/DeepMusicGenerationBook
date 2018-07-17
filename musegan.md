@@ -34,5 +34,13 @@ One single generator takes a random vector $$z$$ , and generate all tracks colle
 
 #### Hybrid Model
 
-This is hybrid of Jamming Model and Hybrid Model. We have M generators where each one takes two random vectors, which are the intra-track$$z_i$$and inter-track $$z$$.
+This is hybrid of Jamming Model and Hybrid Model. We have M generators where each one takes two random vectors, which are the intra-track$$z_i$$and a shared inter-track $$z$$. There is only one discriminator D to make the final judgement. One advantage of Hybrid Model over Composer Model is that it can use different network architecture for each of the generator on different track which gives more flexibility.
+
+###  Modeling the Temporal Structure
+
+With the above model, although we have choice of measuring the inter-dependency of different tracks, we still have to generate the music bar by bar. That is to say, we need another modeling technique to account for the inter-dependency in the time dimension. Two models are designed for this.
+
+###  Generation from Scratch
+
+The first model uses two generators, namely the temporal generator $$G_{temp}$$ and the bar generator  $$G_{bar}$$. 
 
