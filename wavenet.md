@@ -363,5 +363,11 @@ conv = tf.nn.conv1d(transformed, filter_, stride=1,
 
 
 
+## References
+
+1. Van Den Oord, Aäron, Sander Dieleman, Heiga Zen, Karen Simonyan, Oriol Vinyals, Alex Graves, Nal Kalchbrenner, Andrew W. Senior, and Koray Kavukcuoglu. "WaveNet: A generative model for raw audio." In SSW, p. 125. 2016.
+2. Borovykh, Anastasia, Sander Bohte, and Cornelis W. Oosterlee. "Conditional time series forecasting with convolutional neural networks." arXiv preprint arXiv:1703.04691 \(2017\).
+3. Ibab TensorFlow implementation: [https://github.com/ibab/tensorflow-wavenet](https://github.com/ibab/tensorflow-wavenet)
+
 
 
